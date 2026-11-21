@@ -4,3 +4,5 @@
 hosts.local.yml
 .vault-pass*
 *.key
+
+vars.local.yml

@@ -1,0 +1,25 @@
+[Unit]
+Description=Portfolio {{ item }} server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=portfolio-vpn
+Group=portfolio-vpn
+LoadCredential=tls.crt:{{ vpn_tls_cert }}
+LoadCredential=tls.key:{{ vpn_tls_key }}
+{% if item == 'xray' %}
+ExecStart=/usr/local/bin/portfolio-xray run -c /etc/portfolio-vpn/xray.json
+{% else %}
+ExecStart=/usr/local/bin/portfolio-hysteria server -c /etc/portfolio-vpn/hysteria.yml
+{% endif %}
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
