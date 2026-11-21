@@ -21,3 +21,14 @@ jobs:
           shellcheck scripts/rehearse
       - name: Check both authenticated client tunnels on loopback
         run: scripts/rehearse
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: |
+          docker run --rm -v "$PWD:/repo:ro" -w /repo \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            zricethezav/gitleaks:v8.30.0 git . --redact --log-opts=--all
