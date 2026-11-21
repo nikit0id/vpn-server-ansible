@@ -1,0 +1,6 @@
+---
+- name: Run the authenticated VPN services on Ubuntu
+  hosts: vpn
+  become: true
+  roles:
+    - vpn

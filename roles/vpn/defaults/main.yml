@@ -1,0 +1,7 @@
+---
+vpn_xray_url: https://github.com/XTLS/Xray-core/releases/download/v26.11.9/Xray-linux-64.zip
+vpn_xray_sha256: b651f7e1d9966ee2c1b1ee1bf8b52c72771824d3065dce96bbc8bcc19ed95f82
+vpn_hysteria_url: https://github.com/HyNetworks/hysteria/releases/download/app/v2.14.0/hysteria-linux-amd64
+vpn_hysteria_sha256: fc25edff9948708cb00a4ff01f3bccde677660aca050133bb1ad46c6860362d2
+vpn_port: 443
+vpn_listen: "127.0.0.1"

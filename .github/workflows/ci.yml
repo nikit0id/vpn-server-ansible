@@ -1,0 +1,20 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install ansible-core==2.19.15 ansible-lint==26.11.0
+          ansible-galaxy collection install -r requirements.yml
+          ansible-lint site.yml roles
+          ansible-playbook -i localhost, site.yml --syntax-check
