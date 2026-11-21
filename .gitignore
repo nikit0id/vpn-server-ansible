@@ -1,0 +1,6 @@
+.ansible/
+.venv/
+.env
+hosts.local.yml
+.vault-pass*
+*.key

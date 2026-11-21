@@ -1,0 +1,47 @@
+---
+- name: Require Linux x86-64 binaries on Ubuntu
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.architecture == 'x86_64'
+
+- name: Install archive and network tools
+  ansible.builtin.apt:
+    name: [unzip, ufw, ca-certificates]
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Prepare the versioned Xray cache
+  ansible.builtin.file:
+    path: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}"
+    state: directory
+    mode: "0755"
+
+- name: Fetch the pinned Xray archive
+  ansible.builtin.get_url:
+    url: "{{ vpn_xray_url }}"
+    dest: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}/xray.zip"
+    checksum: "sha256:{{ vpn_xray_sha256 }}"
+    mode: "0644"
+
+- name: Extract only the verified Xray executable
+  ansible.builtin.unarchive:
+    src: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}/xray.zip"
+    dest: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}"
+    include: [xray]
+    remote_src: true
+    creates: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}/xray"
+
+- name: Install Xray
+  ansible.builtin.copy:
+    src: "/var/cache/portfolio-vpn/{{ vpn_xray_sha256 }}/xray"
+    dest: /usr/local/bin/portfolio-xray
+    remote_src: true
+    mode: "0755"
+
+- name: Install the verified Hysteria executable
+  ansible.builtin.get_url:
+    url: "{{ vpn_hysteria_url }}"
+    dest: /usr/local/bin/portfolio-hysteria
+    checksum: "sha256:{{ vpn_hysteria_sha256 }}"
+    mode: "0755"
