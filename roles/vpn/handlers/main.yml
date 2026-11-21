@@ -1,0 +1,7 @@
+---
+- name: Restart VPN services
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    name: "portfolio-{{ item }}.service"
+    state: restarted
+  loop: [xray, hysteria]

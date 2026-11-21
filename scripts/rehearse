@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Run only on a disposable Ubuntu VM with passwordless sudo.
+set -euo pipefail
+umask 077
+lab=$(mktemp -d)
+cleanup() {
+    for pid in ${xray_pid:-} ${hy_pid:-}; do kill "$pid" 2>/dev/null || true; done
+    rm -rf "$lab"
+}
+trap cleanup EXIT
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+    -addext subjectAltName=DNS:localhost,IP:127.0.0.1 -keyout "$lab/key" -out "$lab/cert" 2>/dev/null
+uuid=$(cat /proc/sys/kernel/random/uuid)
+password=$(openssl rand -hex 24)
+cat > "$lab/vars.yml" <<VARS
+vpn_uuid: "$uuid"
+vpn_password: "$password"
+vpn_port: 28443
+vpn_tls_cert: "$lab/cert"
+vpn_tls_key: "$lab/key"
+VARS
+printf '[vpn]\nlocalhost ansible_connection=local\n' > "$lab/hosts"
+ansible-playbook -i "$lab/hosts" site.yml -e "@$lab/vars.yml"
+cat > "$lab/hy.yml" <<HY
+server: 127.0.0.1:28443
+auth: "$password"
+tls:
+  sni: localhost
+  ca: $lab/cert
+socks5:
+  listen: 127.0.0.1:28181
+HY
+cat > "$lab/xray.json" <<XRAY
+{"inbounds":[{"listen":"127.0.0.1","port":28180,"protocol":"socks","settings":{"auth":"noauth"}}],
+"outbounds":[{"protocol":"vless","settings":{"vnext":[{"address":"127.0.0.1","port":28443,"users":[{"id":"$uuid","encryption":"none"}]}]},
+"streamSettings":{"network":"tcp","security":"tls","tlsSettings":{"serverName":"localhost","certificates":[{"usage":"verify","certificateFile":"$lab/cert"}]}}}]}
+XRAY
+portfolio-hysteria client -c "$lab/hy.yml" > "$lab/hy.log" 2>&1 &
+hy_pid=$!
+SSL_CERT_FILE="$lab/cert" portfolio-xray run -c "$lab/xray.json" > "$lab/xray.log" 2>&1 &
+xray_pid=$!
+for port in 28180 28181; do
+    curl -fsS --max-time 20 --retry 4 --retry-all-errors --retry-delay 1 \
+        --noproxy '' --proxy "socks5h://127.0.0.1:$port" \
+        https://raw.githubusercontent.com/nikit0id/portfolio-api/16b7da9ccb89279e4e3469fde974613fc464625e/README.md \
+        -o "$lab/response"
+    echo "c4f1112defb40752c5ca0edaf0b44b05af0a5b33b2a22463ca43b4f64cdfa26d  $lab/response" | sha256sum --check --status
+    echo "Authenticated proxy on $port returned the expected payload"
+done

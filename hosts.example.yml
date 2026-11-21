@@ -1,0 +1,6 @@
+---
+vpn:
+  hosts:
+    edge:
+      ansible_host: vpn.example.org
+      ansible_user: ops

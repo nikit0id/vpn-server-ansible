@@ -18,3 +18,6 @@ jobs:
           ansible-galaxy collection install -r requirements.yml
           ansible-lint site.yml roles
           ansible-playbook -i localhost, site.yml --syntax-check
+          shellcheck scripts/rehearse
+      - name: Check both authenticated client tunnels on loopback
+        run: scripts/rehearse

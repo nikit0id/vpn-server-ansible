@@ -1,0 +1,7 @@
+listen: "{{ '[' ~ vpn_listen ~ ']' if ':' in vpn_listen else vpn_listen }}:{{ vpn_port }}"
+tls:
+  cert: /run/credentials/portfolio-hysteria.service/tls.crt
+  key: /run/credentials/portfolio-hysteria.service/tls.key
+auth:
+  type: password
+  password: {{ vpn_password | to_json }}

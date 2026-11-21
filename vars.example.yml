@@ -1,0 +1,7 @@
+---
+vpn_listen: "0.0.0.0"
+vpn_port: 443
+vpn_tls_cert: /etc/letsencrypt/live/vpn.example.org/fullchain.pem
+vpn_tls_key: /etc/letsencrypt/live/vpn.example.org/privkey.pem
+vpn_uuid: "{{ vault_vpn_uuid }}"
+vpn_password: "{{ vault_vpn_password }}"

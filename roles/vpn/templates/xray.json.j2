@@ -1,0 +1,12 @@
+{
+  "inbounds": [{
+    "listen": {{ vpn_listen | to_json }},
+    "port": {{ vpn_port | int }},
+    "protocol": "vless",
+    "settings": {"clients": [{"id": {{ vpn_uuid | to_json }}}], "decryption": "none"},
+    "streamSettings": {"network": "tcp", "security": "tls", "tlsSettings": {
+      "certificates": [{"certificateFile": "/run/credentials/portfolio-xray.service/tls.crt", "keyFile": "/run/credentials/portfolio-xray.service/tls.key"}]
+    }}
+  }],
+  "outbounds": [{"protocol": "freedom"}]
+}

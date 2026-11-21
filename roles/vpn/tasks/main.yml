@@ -38,6 +38,7 @@
     dest: /usr/local/bin/portfolio-xray
     remote_src: true
     mode: "0755"
+  notify: Restart VPN services
 
 - name: Install the verified Hysteria executable
   ansible.builtin.get_url:
@@ -45,3 +46,65 @@
     dest: /usr/local/bin/portfolio-hysteria
     checksum: "sha256:{{ vpn_hysteria_sha256 }}"
     mode: "0755"
+  notify: Restart VPN services
+
+- name: Require TLS material and independent client credentials
+  ansible.builtin.assert:
+    that:
+      - vpn_uuid is match('^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$')
+      - vpn_password | length >= 24
+      - vpn_tls_cert is match('^/')
+      - vpn_tls_key is match('^/')
+      - vpn_port | int >= 1 and vpn_port | int <= 65535
+  no_log: true
+
+- name: Create a service account without login access
+  ansible.builtin.user:
+    name: portfolio-vpn
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Create a protected configuration directory
+  ansible.builtin.file:
+    path: /etc/portfolio-vpn
+    state: directory
+    group: portfolio-vpn
+    mode: "0750"
+
+- name: Render authenticated server configurations
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/portfolio-vpn/{{ item }}"
+    owner: root
+    group: portfolio-vpn
+    mode: "0640"
+  loop: [xray.json, hysteria.yml]
+  no_log: true
+  notify: Restart VPN services
+
+- name: Install isolated service units
+  ansible.builtin.template:
+    src: service.j2
+    dest: "/etc/systemd/system/portfolio-{{ item }}.service"
+    mode: "0644"
+  loop: [xray, hysteria]
+  notify: Restart VPN services
+
+- name: Apply changed binaries, configurations and units
+  ansible.builtin.meta: flush_handlers
+
+- name: Start both VPN services at boot
+  ansible.builtin.systemd_service:
+    name: "portfolio-{{ item }}.service"
+    enabled: true
+    state: started
+  loop: [xray, hysteria]
+
+- name: Add TCP and UDP ingress rules for externally bound services
+  community.general.ufw:
+    rule: allow
+    port: "{{ vpn_port | string }}"
+    proto: "{{ item }}"
+  when: vpn_listen not in ['127.0.0.1', '::1']
+  loop: [tcp, udp]
