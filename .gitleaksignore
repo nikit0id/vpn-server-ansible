@@ -1,0 +1,2 @@
+# Release asset checksum from https://github.com/XTLS/Xray-core/releases/tag/v26.11.9
+be69dad121a5fd02ead08c1e8750c8aad6d27ae6:roles/vpn/defaults/main.yml:jfrog-identity-token:3
